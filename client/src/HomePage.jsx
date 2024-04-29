@@ -4,44 +4,124 @@ import {
     useNavigate,
     Link,
 } from "react-router-dom";
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import { toast } from "react-toastify";
+import axios from 'axios';
 
 const HomePage = () => {
 
-    const [courses, setCourses] = useState([]);
-    const [displayModal, setDisplayModal] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [displayModal, setDisplayModal] = useState(false);
+  const [tasks, setTasks] = useState([]);
+
+  // retrieves all the courses and tasks in the same user document
+  useEffect(() => {
+    const fetchData = async () => {
+        setTasks((await axios.get('http://localhost:3000/tasks')).data);
+        setCourses((await axios.get('http://localhost:3000/courses')).data);
+    };
+
+    fetchData();
+  }, []);
     
-    const addCourse = (course) => {
-      setCourses([course, ...courses])
+  const addCourse = async (title) => {
+    // Create a new task object
+    let newCourse;
+    try {
+      newCourse = (await axios.post(`http://localhost:3000/courses`, { title: title })).data; 
+    } catch(e) {
+      toast.error(e);
+      return;
     }
 
-    const deleteCourse = (course) => {
-      setCourses(courses.filter(c => c !== course));
+    setCourses([newCourse, ...courses])
+    toast.success("course successfully added");
+  }
+
+  const deleteCourse = async (courseId) => {
+    // code here for making backend request
+    try {
+      await axios.delete(`http://localhost:3000/courses/${courseId}`);
+    } catch(e) {
+      toast.error(e);
+      return;
+    }
+    
+    setCourses(courses.filter(c => c._id !== courseId));
+    setTasks(tasks.filter(t => t.courseId !== courseId));
+
+    toast.success("course successfully removed");
+  }
+
+  const deleteTask = async (taskId) => {
+    // code here for making backend request
+    try {
+      await axios.delete(`http://localhost:3000/tasks/${tasksId}`);
+    } catch(e) {
+      toast.error(e);
+      return;
     }
 
-    return <div>
-        <h1>Plan-It Smart</h1>
-        {displayModal && (<AddCourseModal
+    setTasks(tasks.filter(t => t._id !== taskId));
+    toast.success("assignment marked complete");
+  }
+
+  const findCouseTitleById = (courseId) => {
+    return courses.find(course => course._id === courseId).title;
+  }
+    
+  return (
+    <div>
+        <h1 class="text-center text-4xl font-bold text-primary py-4 bg-accent p-3 rounded shadow-lg">
+            This Weeks Tasks
+        </h1>
+        <p class="text-center text-primary py-4 bg-accent">
+          click on one of your courses to add assignments
+        </p>
+        {displayModal && (
+            <AddCourseModal
                 addCourse={addCourse}
                 isVisible={displayModal}
                 onClose={() => setDisplayModal(false)}
-            />)}
-        <button onClick={() => setDisplayModal(true)}>add course</button>
-        <div className="grid grid-cols-3 gap-4"> {/* Layout courses in a grid */}
-            {courses.map((course) => (
-                <div key={course.id} className="card card-bordered" >
-                    <div className="card-body">
-                        <Link to={`/courses/${course.id}`}><h2 className="card-title">{course.name}</h2></Link>
-                        <button 
-                            onClick={() => deleteCourse(course.id)} 
-                            className="btn btn-error btn-circle btn-sm absolute right-2 top-2">
-                            <i className="fas fa-trash-alt"></i> {/* Font Awesome trash icon */}
-                        </button>
-                    </div>
+            />
+        )}
+        <div className="grid grid-cols-7 gap-4 my-4"> {/* Adjusted grid for tasks and courses */}
+            {/* Task Columns for Monday to Friday */}
+            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
+                <div key={day} className="col-span-1">
+                    <h2 className="text-center font-bold">{day}</h2>
+                    {tasks.filter(task => task.day === day).map((task, index) => (
+                        <div key={index} className="bg-gray-100 p-2 rounded shadow my-2">
+                            {task.description}
+                        </div>
+                    ))}
                 </div>
             ))}
+            {/* Courses Column */}
+            <div className="col-span-2 bg-blue-100 p-3 rounded shadow">
+                <button 
+                    onClick={() => setDisplayModal(true)} 
+                    className="btn btn-primary w-full mb-4">
+                    Add Course
+                </button>
+                {courses.map((course) => (
+                    <div key={course.id} className="card card-bordered my-2">
+                        <div className="card-body">
+                            <h2 className="card-title"><Link to={`/courses/${course}`}>{course.name}</Link></h2>
+                            <button 
+                                onClick={() => deleteCourse(course.id)} 
+                                className="btn btn-error btn-circle btn-sm absolute right-2 top-1/2 transform -translate-y-1/2"
+                                title="Delete Course">
+                                <i className="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     </div>
+  );
+  
 }
 
 

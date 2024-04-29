@@ -1,24 +1,33 @@
 import Task from './task.jsx';
 import {useState, Modal, useEffect} from 'react';
 import './index.css'; // or wherever your Tailwind CSS file is located
+import axios from 'axios';
+import { toast } from "react-toastify";
 
 const CoursePage = () => {
-    const course = useParams();
+    const courseId = useParams();
     const [tasks, setTasks] = useState([]);
     const [displayModal, setDisplayModal] = useState(false);
+    let course;
 
     useEffect(() => {
-        const fetchData = async () => {
-            
-        };
-
-        fetchData();
-    }, [course]);
-
+        // this is where I get all the tasks from a certain course
+        course = null // make backend request to get course object
+    }, []);
     
-    const addTask = ({ description, due_date }) => {
+    const addTask = async ({ description, due_date }) => {
         // Create a new task object
-        const newTask = { description, due_date: new Date(due_date) };
+        let newTask;
+        try {
+            newTask = (await axios.post(`http://localhost:3000/tasks`, { 
+            description: description, 
+            courseId: courseId, 
+            due_date: due_date 
+        })).data;
+        } catch(e) {
+            toast.error(e);
+            return;
+        }
 
         // Add the new task to the existing tasks array and sort it
         setTasks(prevTasks => {
@@ -30,31 +39,31 @@ const CoursePage = () => {
 
             return updatedTasks;
         });
-
-        
+        toast.success("assignment successfully created");
     };
 
-    const deleteTodo = (description) => {
-        setTasks(() => tasks.filter((task) => task.description !== description));
-        
+    const deleteTask = async (taskId) => {
+        try {
+            await axios.delete(`http://localhost:3000/tasks/${tasksId}`);
+          } catch(e) {
+            toast.error(e);
+            return;
+        }
+
+        setTasks(() => tasks.filter((task) => task._id !== taskId));
+        // make backend request here
+        toast.success("assignment marked complete");
     }
     
-    useEffect(() => console.log(displayModal), [displayModal]);
-    
     return <>
-        <h2 className="text-red-500">{course}</h2>
+        <h2>{course.title}</h2>
         {displayModal && <>
-            <dialog id="my_modal" className="modal">
-            <div className="modal-box">
-                <h3 className="font-bold text-lg">Hello!</h3>
-                <p className="py-4">Press ESC key or click outside to close</p>
-            </div>
-            <form method="dialog" className="modal-backdrop">
-                <button onClick={() => setDisplayModal(false)}>close</button>
-            </form>
-            </dialog>
-        </>
-        }
+            <TaskModal
+                    isVisible={displayModal}
+                    onClose={() => setDisplayModal(false)}
+                    addTask={addTask}
+            />
+        </>}
         <button className="" onClick={() => setDisplayModal(true)}>
             add task
         </button>
@@ -63,5 +72,61 @@ const CoursePage = () => {
         </div>}
     </>
 }
+
+const TaskModal = ({ isVisible, onClose, addTask }) => {
+    const [description, setDescription] = useState('');
+    const [dueDate, setDueDate] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (description && dueDate) {
+            addTask({ description, dueDate });
+            setDescription('');
+            setDueDate('');
+            onClose();
+        }
+    };
+
+    if (!isVisible) return null;
+
+    return (
+        <div className={`modal modal-open ${!isVisible ? "modal-close" : ""}`}>
+            <div className="modal-box">
+                <form onSubmit={handleSubmit}>
+                    <label htmlFor="description" className="label">
+                        <span className="label-text">Description</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="description"
+                        className="input input-bordered w-full"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        required
+                    />
+
+                    <label htmlFor="dueDate" className="label">
+                        <span className="label-text">Due Date</span>
+                    </label>
+                    <input
+                        type="date"
+                        id="dueDate"
+                        className="input input-bordered w-full"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        required
+                    />
+
+                    <div className="modal-action">
+                        <button type="submit" className="btn btn-primary">Add Task</button>
+                        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
 
 export default CoursePage;
