@@ -1,11 +1,10 @@
 import express from 'express';
-// import blogDataFunctions from './data/blogs.js';
-// import userDataFunctions from './data/users.js';
-// import commentDataFunctions from './data/comments.js';
+import constructorMethod from './routes/index.js';
 
 const app = express();
 
 app.use(express.json());
+constructorMethod(app);
 
 // add the code for setting up the routes
 
