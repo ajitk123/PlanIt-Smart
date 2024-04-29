@@ -44,7 +44,7 @@ const CoursePage = () => {
 
     const deleteTask = async (taskId) => {
         try {
-            await axios.delete(`http://localhost:3000/tasks/${tasksId}`);
+            await axios.delete(`http://localhost:3000/tasks/${taskId}`);
           } catch(e) {
             toast.error(e);
             return;

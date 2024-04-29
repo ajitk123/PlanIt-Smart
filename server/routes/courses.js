@@ -9,7 +9,7 @@ router
 })
 .post(async (req, res) => {
     // adding a course
-
+    
 })
 
 .route('/courses/:id')
