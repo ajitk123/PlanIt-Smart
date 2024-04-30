@@ -14,5 +14,5 @@ const getCollectionFn = (collection) => {
 };
 
 // NOTE: YOU WILL NEED TO CHANGE THE CODE BELOW TO HAVE THE COLLECTION(S) REQUIRED BY THE ASSIGNMENT
-export const users = getCollectionFn('courses');
+export const courses = getCollectionFn('courses');
 export const tasks = getCollectionFn('tasks');

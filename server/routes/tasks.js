@@ -1,50 +1,45 @@
 import { Router } from 'express';
-import { courses, tasks } from '../config/mongoCollections.js'
+import courseDataFunctions from '../data/courses.js';
 const router = Router();
 
-router
-.route('/tasks')
-.get(async (req, res) => {
-    const tasks = await tasks();
-    res.json(tasks);
 
+router
+.route('/')
+.get(async (req, res) => {
+    const tasks = await courseDataFunctions.getAllTasks();
+    res.json(tasks);
 })
 .post(async (req, res) => {
     // adding a task, return the new task
+    let { description, 
+            courseId, 
+            due_date } = req.body;
 
-    const task = req.body;
-    const tasks = await tasks();
-    const newTask = await tasks.insertOne(task);
+    const newTask = await courseDataFunctions.addTaskToCourse(description, courseId, due_date);
+    console.log(newTask);
     res.json(newTask);
-    
 
 })
 
-.route('/tasks/:courseId')
+router.route('/:courseId')
 .get(async (req, res) => {
     // get all tasks for a course
 
-    const courseId = req.params.courseId;
-    const tasks = await tasks();
-    const courseTasks = await tasks.find({courseId: courseId}).toArray();
-    res.json(courseTasks);
-    
+    let {courseId} = req.params;
+
+    const tasks = await courseDataFunctions.getAllTasksFromCourse(courseId);
+
+    return res.json(tasks);
 })
 
-.route('/tasks/:id')
+router.route('/:id')
 .delete(async (req, res) => {
     // deleting a task
     
-    const id = req.params.id;
-    const tasks = await tasks();
-    const task = await tasks.findOne({_id: id});
-    if (!task) {
-        res.status(404).json({error: 'Task not found'});
-        return;
-    }
-    await tasks.deleteOne({_id: id});
-    res.json(task);
+    let {id} = req.params;
+    await courseDataFunctions.deleteTask(id);
     
 })
 
+export default router;
 

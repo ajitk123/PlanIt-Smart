@@ -1,22 +1,24 @@
 import "./index.css"; // or wherever your Tailwind CSS file is located
 import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import axios from "axios";
+import 'react-toastify/dist/ReactToastify.css';
 
 const HomePage = () => {
   const [courses, setCourses] = useState([]);
   const [displayModal, setDisplayModal] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // retrieves all the courses and tasks in the same user document
   useEffect(() => {
     const fetchData = async () => {
-      setTasks((await axios.get("http://localhost:3000/tasks")).data);
-      setCourses((await axios.get("http://localhost:3000/courses")).data);
+        setTasks((await axios.get("http://localhost:3000/tasks")).data);
+        setCourses((await axios.get("http://localhost:3000/courses")).data);
     };
-
     fetchData();
+    setLoading(false);
     toast.success("successfully loaded");
   }, []);
 
@@ -28,7 +30,6 @@ const HomePage = () => {
         await axios.post(`http://localhost:3000/courses`, { title: title })
       ).data;
     } catch (e) {
-      toast.success("this works");
       toast.error(e.message);
       return;
     }
@@ -40,7 +41,8 @@ const HomePage = () => {
   const deleteCourse = async (courseId) => {
     // code here for making backend request
     try {
-      await axios.delete(`http://localhost:3000/courses/${courseId}`);
+      const message = await axios.delete(`http://localhost:3000/courses/${courseId}`);
+      console.log(`message: ${message}`);
     } catch (e) {
       toast.error(e);
       return;
@@ -69,8 +71,11 @@ const HomePage = () => {
     return courses.find((course) => course._id === courseId).title;
   };
 
+  if (loading) return <p>loading</p>;
+
   return (
     <div>
+      <ToastContainer />
       <h1 className="text-center text-4xl font-bold text-primary py-4 bg-accent p-3 rounded shadow-lg">
         This Weeks Tasks
       </h1>
@@ -112,17 +117,17 @@ const HomePage = () => {
             Add Course
           </button>
           {courses.map((course) => (
-            <div key={course.id} className="card card-bordered my-2">
-              <div className="card-body">
-                <h2 className="card-title">
-                  <Link to={`/courses/${course}`}>{course.name}</Link>
+            <div key={course._id} className="card card-bordered my-2">
+              <div className="flex justify-between items-center p-4">
+                <h2 className="card-title flex-grow">
+                  <Link to={`/courses/${course._id}`}>{course.title}</Link>
                 </h2>
                 <button
-                  onClick={() => deleteCourse(course.id)}
-                  className="btn btn-error btn-circle btn-sm absolute right-2 top-1/2 transform -translate-y-1/2"
-                  title="Delete Course"
+                    onClick={() => deleteCourse(course._id)}
+                    className="btn btn-error btn-circle btn-sm"
+                    title="Delete Course"
                 >
-                  <i className="fas fa-trash-alt"></i>
+                    <i className="fas fa-trash-alt"></i>
                 </button>
               </div>
             </div>
@@ -134,21 +139,15 @@ const HomePage = () => {
 };
 
 const AddCourseModal = ({ addCourse, isVisible, onClose }) => {
-  const [courseName, setCourseName] = useState("");
-  const [courseDescription, setCourseDescription] = useState("");
+  const [courseTitle, setCourseTitle] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // Create a new course object
-    const newCourse = {
-      name: courseName,
-      description: courseDescription,
-    };
     // Invoke the provided addCourse method
-    addCourse(newCourse);
+    addCourse(courseTitle);
     // Clear the form
-    setCourseName("");
-    setCourseDescription("");
+    setCourseTitle("");
     // Close modal
     onClose();
   };
@@ -168,8 +167,8 @@ const AddCourseModal = ({ addCourse, isVisible, onClose }) => {
               type="text"
               placeholder="Enter course name"
               className="input input-bordered w-full"
-              value={courseName}
-              onChange={(e) => setCourseName(e.target.value)}
+              value={courseTitle}
+              onChange={(e) => setCourseTitle(e.target.value)}
               required
             />
           </div>
