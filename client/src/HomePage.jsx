@@ -10,6 +10,8 @@ const HomePage = () => {
   const [displayModal, setDisplayModal] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [failSafeModal, setFailSafeModal] = useState(false);
+  const [failSafeCourseId, setFailSafeCourseId] = useState("");
 
   // retrieves all the courses and tasks in the same user document
   useEffect(() => {
@@ -89,6 +91,13 @@ const HomePage = () => {
           onClose={() => setDisplayModal(false)}
         />
       )}
+      {failSafeModal && (
+        <FailSafe
+          deleteCourse={deleteCourse}
+          setFailSafeModal={setFailSafeModal}
+          courseId={failSafeCourseId}
+        />
+      )}
       <div className="grid grid-cols-7 gap-4 my-4">
         {" "}
         {/* Adjusted grid for tasks and courses */}
@@ -123,7 +132,7 @@ const HomePage = () => {
                   <Link to={`/courses/${course._id}`}>{course.title}</Link>
                 </h2>
                 <button
-                    onClick={() => deleteCourse(course._id)}
+                    onClick={() => {setFailSafeModal(true), setFailSafeCourseId(course._id)}}
                     className="btn btn-error btn-circle btn-sm"
                     title="Delete Course"
                 >
@@ -185,5 +194,17 @@ const AddCourseModal = ({ addCourse, isVisible, onClose }) => {
     </div>
   );
 };
+
+const FailSafe = ({setFailSafeModal, courseId, deleteCourse}) => {
+  return <div className={`modal modal-open`}>
+    <div className="modal-box">
+        <h3 className="font-bold text-lg">Deleting this course will also delete the assignments associated with it. Are you sure?</h3>
+        <div className="modal-action">
+            <button onClick={() => {deleteCourse(courseId); setFailSafeModal(false)}} className="btn btn-error">Delete</button>
+            <button onClick={() => setFailSafeModal(false)} className="btn btn-ghost">Cancel</button>
+        </div>
+    </div>
+  </div>;
+}
 
 export default HomePage;
