@@ -15,23 +15,28 @@ const CoursePage = () => {
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(async () => {
+    useEffect(() => {
+
+        const fetchData = async () => {
+            let response = (await axios.get(`http://localhost:3000/courses/${courseId}`)).data
+            setCourse(response);
+            response = (await axios.get(`http://localhost:3000/tasks/${courseId}`)).data
+            setTasks(response);
+            setLoading(false);
+        }
         // this is where I get all the tasks from a certain course
-        let response = (await axios.get(`http://localhost:3000/courses/${courseId}`)).data
-        setCourse(response);
-        response = (await axios.get(`http://localhost:3000/tasks/${courseId}`)).data
-        setTasks(response);
-        setLoading(false);
+        fetchData();
     }, []);
     
-    const addTask = async ({ description, due_date }) => {
+    const addTask = async ({ description, due_date, course_title }) => {
         // Create a new task object
         let newTask;
         try {
             newTask = (await axios.post(`http://localhost:3000/tasks`, { 
             description: description, 
             courseId: courseId, 
-            due_date: due_date 
+            due_date: due_date,
+            course_title: course_title
         })).data;
         console.log(newTask);
         } catch(e) {
@@ -55,11 +60,12 @@ const CoursePage = () => {
     const completeTask = async (taskId) => {
         try {
             await axios.delete(`http://localhost:3000/tasks/${taskId}`);
-          } catch(e) {
+        } catch(e) {
             toast.error(e);
             return;
         }
 
+        console.log(tasks.filter((task) => task._id !== taskId));
         setTasks(() => tasks.filter((task) => task._id !== taskId));
         // make backend request here
         toast.success("assignment marked complete");
@@ -71,26 +77,22 @@ const CoursePage = () => {
     else return <>
         <ToastContainer />
         <div className="container mx-auto px-2 py-2">
-            <div className="flex items-center justify-between mb-4">
-            {/* Back and Add Task Buttons */}
-            <div className="flex items-center gap-4">
-            {/* Back Button */}
-            <Link to="/" className="btn btn-outline btn-accent">
-                <i className="fas fa-arrow-left"></i> Back
-            </Link>
+            <div className="flex items-center justify-center mb-4">
+                {/* Back and Add Task Buttons */}
+                <div className="flex items-center gap-4">
+                {/* Back Button */}
+                <Link to="/" className="btn btn-outline btn-accent">
+                    <i className="fas fa-arrow-left"></i> Back
+                </Link>
 
-            {/* Task Modal Trigger */}
-            <button className="btn btn-primary" onClick={() => setDisplayModal(true)}>
-                Add Task
-            </button>
+                {/* Course Title */}
+                <h2 className="text-xl font-bold flex-grow text-center">{course.title}</h2>
+
+                {/* Task Modal Trigger */}
+                <button className="btn btn-primary" onClick={() => setDisplayModal(true)}>
+                    Add Task
+                </button>
             </div>
-            
-            {/* Course Title */}
-            <h2 className="text-xl font-bold flex-grow text-center">{course.title}</h2>
-            
-            {/* Spacer to balance the layout */}
-            <div style={{ width: 144 }}> {/* Adjust width based on actual button widths to balance */}
-        </div>
         
         </div>
 
@@ -101,13 +103,14 @@ const CoursePage = () => {
                     isVisible={displayModal}
                     onClose={() => setDisplayModal(false)}
                     addTask={addTask}
+                    course_title={course.title}
                 />
                 </>
             )}
         </div>
 
-        <div className="col-span-2 bg-blue-100 p-3 rounded shadow">
-  <div className="grid grid-cols-2 gap-4 place-items-center mx-auto"> {/* Updated grid setup for centering */}
+        <div className="col-span-2 bg-blue-100 p-3 rounded shadow mx-auto w-1/2 min-h-[50vh]">
+  <div className="grid grid-cols-1 gap-4 place-items-center h-full"> {/* Updated grid setup for centering */}
     {tasks && tasks.map(task => (
       <div key={task._id} className="card card-bordered my-2 w-full"> {/* Ensure full width of grid column */}
         <div className="flex justify-between items-center p-4">
@@ -131,7 +134,7 @@ const CoursePage = () => {
     </>
 }
 
-const TaskModal = ({ isVisible, onClose, addTask }) => {
+const TaskModal = ({ isVisible, onClose, addTask, course_title }) => {
     const [description, setDescription] = useState('');
     const [due_date, setDueDate] = useState('');
 
@@ -142,8 +145,7 @@ const TaskModal = ({ isVisible, onClose, addTask }) => {
         if (description && due_date) {
             const date = new Date(due_date);
         const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
-
-            addTask({ description, due_date: format(new Date(adjustedDate), 'MM/dd/yyyy') });
+            addTask({ description, due_date: format(new Date(adjustedDate), 'MM/dd/yyyy'), course_title });
             setDescription('');
             setDueDate('');
             onClose();

@@ -22,14 +22,15 @@ let courseDataFunctions = {
         return course;
 
     },
-    async addTaskToCourse(description, courseId, due_date) {
+    async addTaskToCourse(description, courseId, due_date, course_title) {
 
         //tasks will have courseId as a field
         const task = {
             _id: new ObjectId(),
             description: description,
             due_date: due_date,
-            courseId: courseId
+            courseId: courseId,
+            course_title: course_title
         };
 
         const taskCollection = await tasks();
@@ -109,6 +110,7 @@ let courseDataFunctions = {
     
     // deletes a specific task
     async deleteTask(taskId) {
+        if(!ObjectId.isValid(taskId)) throw "Error: invalid ID";
         const taskCollection = await tasks();
         const deletedTask = await taskCollection.deleteOne({ _id: new ObjectId(taskId) });
     }

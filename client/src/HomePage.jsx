@@ -13,6 +13,7 @@ const HomePage = () => {
   const [failSafeModal, setFailSafeModal] = useState(false);
   const [failSafeCourseId, setFailSafeCourseId] = useState("");
 
+
   // retrieves all the courses and tasks in the same user document
   useEffect(() => {
     const fetchData = async () => {
@@ -21,7 +22,6 @@ const HomePage = () => {
     };
     fetchData();
     setLoading(false);
-    toast.success("successfully loaded");
   }, []);
 
   const addCourse = async (title) => {
@@ -40,6 +40,60 @@ const HomePage = () => {
     toast.success("course successfully added");
   };
 
+
+  const [monday, setMonday] = useState([]);
+  const [tuesday, setTuesday] = useState([]);
+  const [wednesday, setWednesday] = useState([]);
+  const [thursday, setThursday] = useState([]);
+  const [friday, setFriday] = useState([]);
+
+  const parseDate = (dateStr) => {
+    const [month, day, year] = dateStr.split("/");
+    return new Date(year, month - 1, day); // Note: Months are 0-indexed in JavaScript Date
+  };
+
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today's date to midnight for comparison
+    const currentDayIndex = today.getDay(); // Sunday - 0, Monday - 1, ..., Saturday - 6
+  
+    const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const dayOffsets = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5 };
+  
+    // Create arrays for each day
+    const mondayTasks = [];
+    const tuesdayTasks = [];
+    const wednesdayTasks = [];
+    const thursdayTasks = [];
+    const fridayTasks = [];
+  
+    tasks.forEach(task => {
+      const taskDate = parseDate(task.due_date);
+      taskDate.setHours(0, 0, 0, 0); // Normalize task date to midnight for comparison
+      const taskDayOfWeek = taskDate.getDay();
+  
+      if (taskDayOfWeek === dayOffsets.Monday && taskDate >= today) {
+        mondayTasks.push(task);
+      } else if (taskDayOfWeek === dayOffsets.Tuesday && taskDate >= today) {
+        tuesdayTasks.push(task);
+      } else if (taskDayOfWeek === dayOffsets.Wednesday && taskDate >= today) {
+        wednesdayTasks.push(task);
+      } else if (taskDayOfWeek === dayOffsets.Thursday && taskDate >= today) {
+        thursdayTasks.push(task);
+      } else if (taskDayOfWeek === dayOffsets.Friday && taskDate >= today) {
+        fridayTasks.push(task);
+      }
+    });
+
+    // Update state based on current day to filter past days
+    setMonday(currentDayIndex <= dayOffsets.Monday ? mondayTasks : []);
+    setTuesday(currentDayIndex <= dayOffsets.Tuesday ? tuesdayTasks : []);
+    setWednesday(currentDayIndex <= dayOffsets.Wednesday ? wednesdayTasks : []);
+    setThursday(currentDayIndex <= dayOffsets.Thursday ? thursdayTasks : []);
+    setFriday(currentDayIndex <= dayOffsets.Friday ? fridayTasks : []);
+  }, [tasks, courses]); // You might include courses in dependencies if they affect the rendering logic
+  
+
   const deleteCourse = async (courseId) => {
     // code here for making backend request
     try {
@@ -56,12 +110,12 @@ const HomePage = () => {
     toast.success("course successfully removed");
   };
 
-  const deleteTask = async (taskId) => {
+  const completeTask = async (taskId) => {
     // code here for making backend request
     try {
-      await axios.delete(`http://localhost:3000/tasks/${tasksId}`);
+      await axios.delete(`http://localhost:3000/tasks/${taskId}`);
     } catch (e) {
-      toast.error(e);
+      toast.error(e.message);
       return;
     }
 
@@ -102,21 +156,16 @@ const HomePage = () => {
         {" "}
         {/* Adjusted grid for tasks and courses */}
         {/* Task Columns for Monday to Friday */}
-        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
-          <div key={day} className="col-span-1">
-            <h2 className="text-center font-bold">{day}</h2>
-            {tasks
-              .filter((task) => task.day === day)
-              .map((task, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-100 p-2 rounded shadow my-2"
-                >
-                  {task.description}
-                </div>
-              ))}
-          </div>
-        ))}
+        <div className="col-span-5">
+        <TasksDisplayComponent
+          monday={monday}
+          tuesday={tuesday}
+          wednesday={wednesday}
+          thursday={thursday}
+          friday={friday}
+          completeTask={completeTask}
+        />
+        </div>
         {/* Courses Column */}
         <div className="col-span-2 bg-blue-100 p-3 rounded shadow">
           <button
@@ -206,5 +255,42 @@ const FailSafe = ({setFailSafeModal, courseId, deleteCourse}) => {
     </div>
   </div>;
 }
+
+const TasksDisplayComponent = ({ monday, tuesday, wednesday, thursday, friday, completeTask }) => {
+  // Create a mapping from day names to their corresponding state variables
+  const dayToTasksMapping = {
+    Monday: monday,
+    Tuesday: tuesday,
+    Wednesday: wednesday,
+    Thursday: thursday,
+    Friday: friday
+  };
+
+  return (
+    <div className="grid grid-cols-5 gap-4 my-4"> {/* Adjust grid cols to 5 for 5 days */}
+      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
+        <div key={day} className="col-span-1">
+          <h2 className="text-center font-bold">{day}</h2>
+          {dayToTasksMapping[day].map((task, index) => (
+            <div
+              key={index}
+              className="bg-gray-100 p-2 rounded shadow my-2"
+            > 
+              <strong>{task.course_title}</strong>
+              <p className="my-4">{task.description}</p>
+              <button
+                onClick={() => completeTask(task._id)}
+                className="btn btn-success btn-circle btn-sm"
+                title="Mark Complete"
+              >
+                <i className="fas fa-check"></i>
+              </button>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default HomePage;

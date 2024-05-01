@@ -13,9 +13,9 @@ router
     // adding a task, return the new task
     let { description, 
             courseId, 
-            due_date } = req.body;
+            due_date, course_title } = req.body;
 
-    const newTask = await courseDataFunctions.addTaskToCourse(description, courseId, due_date);
+    const newTask = await courseDataFunctions.addTaskToCourse(description, courseId, due_date, course_title);
     console.log(newTask);
     res.json(newTask);
 
@@ -35,10 +35,9 @@ router.route('/:courseId')
 router.route('/:id')
 .delete(async (req, res) => {
     // deleting a task
-    
     let {id} = req.params;
     await courseDataFunctions.deleteTask(id);
-    
+    res.status(200).send("deleted successfully!");
 })
 
 export default router;

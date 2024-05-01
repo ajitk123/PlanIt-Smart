@@ -28,8 +28,13 @@ router.route('/:id')
 .delete(async (req, res) => {
     // for deleting a course
     let {id} = req.params;
-    await courseDataFunctions.deleteCourse(id);
-    return res.send("course deleted successfully");
+    try {
+        await courseDataFunctions.deleteCourse(id);
+        return res.status(200).json({message: "course deleted successfully"});
+    } catch(e) {
+        res.status(404).send("error, invalid id");
+    }
+
 })
 
 export default router;
